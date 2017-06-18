@@ -1,31 +1,26 @@
-#
-# Database access functions for the web forum.
-# 
+# "Database code" for the DB Forum.
 
-import time
+import datetime
+import psycopg2, bleach
 
-## Database connection
-DB = []
+DBNAME = "forum"
 
-## Get posts from database.
-def GetAllPosts():
-    '''Get all the posts from the database, sorted with the newest first.
+POSTS = [("This is the first post.", datetime.datetime.now())]
 
-    Returns:
-      A list of dictionaries, where each dictionary has a 'content' key
-      pointing to the post content, and 'time' key pointing to the time
-      it was posted.
-    '''
-    posts = [{'content': str(row[1]), 'time': str(row[0])} for row in DB]
-    posts.sort(key=lambda row: row['time'], reverse=True)
-    return posts
+def get_posts():
+  """Return all posts from the 'database', most recent first."""
+  db = psycopg2.connect(database=DBNAME)
+  c = db.cursor()
+  c.execute("select content, time from posts order by time desc")
+  return c.fetchall()
+  db.close()
 
-## Add a post to the database.
-def AddPost(content):
-    '''Add a new post to the database.
+def add_post(content):
+  """Add a post to the 'database' with the current timestamp."""
+  db = psycopg2.connect(database=DBNAME)
+  c = db.cursor()
+  c.execute("insert into posts values (%s)", (bleach.clean(content),))
+  db.commit()
+  db.close()
 
-    Args:
-      content: The text content of the new post.
-    '''
-    t = time.strftime('%c', time.localtime())
-    DB.append((t, content))
+
